@@ -1,0 +1,14 @@
+[ ]upload to git hub!!!
+[ ]document final playerfile format (ids would be better to have handy!?! or else switch the index on the map)
+[ ]complete fn to load up individual weekly stats
+[ ]parse list of players that have been used (in play)
+[ ]set up a chan based solution that loads up the players randomly via proxies?
+[*]refactor out the load/save code
+[*]refactor out the scraping code 
+[ ]http server that:
+	at root renders a summary page showing the scores for the last weekend.
+	renders a pager for each team, detailing the week by week scores
+	have a history page that shows the leaderboard for a particular week #
+
+
+ 
