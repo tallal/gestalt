@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -12,24 +13,26 @@ func scrapeAllPlayers() map[string]fflPlayer {
 
 	players := make(map[string]fflPlayer)
 
-	//	doc, err := goquery.NewDocument("https://fantasyfootball.telegraph.co.uk/premierleague/PLAYERS/all")
-	doc, err := goquery.NewDocument("https://fantasyfootball.telegraph.co.uk/premierleague/PLAYERS/alp")
+	doc, err := goquery.NewDocument(os.Getenv("FFL-URL1"))
 	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
-
-	doc.Find("td.first").Each(func(i int, s *goquery.Selection) {
-
-		p := fflPlayer{}
+	p := fflPlayer{}
+	doc.Find("tr").Each(func(i int, row *goquery.Selection) {
+		s := row.Find("td.first")
 		p.Name = strings.ToLower(strings.Trim(s.Text(), "' "))
 		p.URL, _ = s.Find("a").Attr("href")
 		if p.URL == "" {
 			log.Printf("empty URL detected for %v", p.Name)
 		}
 
-		p.ID, _ = strconv.Atoi(strings.TrimPrefix(p.URL, "https://fantasyfootball.telegraph.co.uk/premierleague/statistics/points/"))
-		players[p.Name] = p
+		p.ID, _ = strconv.Atoi(strings.TrimPrefix(p.URL, os.Getenv("FFL-URL2")))
+		p.Team = s.Next().Text()
+		p.Index = p.Name + "|" + p.Team
+
+		//fmt.Printf("Player Processed:\n Name:%s, Team:%v , index:%s, url:%s\n", p.Name, p.Team, p.Index, p.URL)
+		players[p.Index] = p
 	})
 
 	return players
@@ -43,6 +46,9 @@ func scrapePlayer(p *fflPlayer) {
 		log.Printf("empty URL detected for %v", p.Name)
 		return
 	}
+
+	//fmt.Printf("Processing:%s URL:%s\n", p.Name, p.URL)
+
 	p.WeekStats = make(map[string]weekStats)
 	doc, err := goquery.NewDocument(p.URL)
 	if err != nil {
@@ -50,7 +56,8 @@ func scrapePlayer(p *fflPlayer) {
 		log.Fatal(err)
 		return
 	}
-	p.Team = doc.Find("#stats-team").Text()
+
+	//p.Team = doc.Find("#stats-team").Text()
 	p.Value = doc.Find("#stats-value").Text()
 	p.Position = doc.Find("#stats-position").Text()
 
@@ -63,6 +70,7 @@ func scrapePlayer(p *fflPlayer) {
 	case "Goalkeeper":
 		p.WeekStats = processGK(doc)
 	}
+	//fmt.Printf("weekstats:%v\n", p.WeekStats)
 }
 
 func processMidAndFwd(doc *goquery.Document) map[string]weekStats {

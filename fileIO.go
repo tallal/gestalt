@@ -46,12 +46,12 @@ func savePlayerFile(filename string, plist map[string]fflPlayer) {
 	encodeFile.Close()
 }
 
-func loadTeamFile(name string, filename string, bootstrap string, owner string, allPlayers map[string]fflPlayer) team {
+func loadTeamFile(name string, bootstrap string, owner string, allPlayers map[string]fflPlayer) team {
 
 	var team2load team
 
 	team2load.Name = name
-	team2load.Filename = filename
+	team2load.Filename = ""
 	team2load.Bootstrap = bootstrap
 	team2load.Owner = owner
 
@@ -70,18 +70,20 @@ func loadTeamFile(name string, filename string, bootstrap string, owner string, 
 		for scanner.Scan() {
 			//fmt.Printf(">%v<\n", scanner.Text())
 			arr := strings.Split(strings.Trim(scanner.Text(), " "), "|")
-			searchName := strings.ToLower(strings.Trim(arr[0], "' "))
+			searchName := strings.ToLower(strings.Trim(arr[0], "' ")) + "|" + arr[1]
+
 			//fmt.Printf("Searching for%v\n", searchName)
 			//fmt.Println("PLAYER NAME:", strings.ToLower(strings.Trim(arr[0], "' ")))
 			p, ok := allPlayers[searchName]
 
 			if ok {
-				p.ScoringWeekStart, _ = strconv.Atoi(arr[1])
-				p.ScoringWeekEnd, _ = strconv.Atoi(arr[2])
+				p.ScoringWeekStart, _ = strconv.Atoi(arr[2])
+				p.ScoringWeekEnd, _ = strconv.Atoi(arr[3])
 
 				team2load.Players[arr[0]] = p
+				//fmt.Printf("Added %v\n", p.Name)
 			} else {
-				fmt.Printf(">>NOT FOUND %v\n", searchName)
+				fmt.Printf(">>PLAYER NOT FOUND %v\n", searchName)
 			}
 
 		}
