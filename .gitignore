@@ -1,2 +1,8 @@
 gestalt
-gestalt.exe
+*.exe
+xls*
+data*
+
+
+
+

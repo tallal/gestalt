@@ -1,18 +1,19 @@
 package main
 
 import (
-	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
-func scrapeAllPlayers() map[int]fflPlayer {
+func scrapeAllPlayers() map[string]fflPlayer {
 
-	players := make(map[int]fflPlayer)
+	players := make(map[string]fflPlayer)
 
-	doc, err := goquery.NewDocument("https://fantasyfootball.telegraph.co.uk/premierleague/PLAYERS/all")
+	//	doc, err := goquery.NewDocument("https://fantasyfootball.telegraph.co.uk/premierleague/PLAYERS/all")
+	doc, err := goquery.NewDocument("https://fantasyfootball.telegraph.co.uk/premierleague/PLAYERS/alp")
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -21,10 +22,14 @@ func scrapeAllPlayers() map[int]fflPlayer {
 	doc.Find("td.first").Each(func(i int, s *goquery.Selection) {
 
 		p := fflPlayer{}
-		p.Name = s.Text()
-		p.Url, _ = s.Find("a").Attr("href")
-		p.Id, _ = strconv.Atoi(strings.TrimPrefix(p.Url, "https://fantasyfootball.telegraph.co.uk/premierleague/statistics/points/"))
-		players[p.Id] = p
+		p.Name = strings.ToLower(strings.Trim(s.Text(), "' "))
+		p.URL, _ = s.Find("a").Attr("href")
+		if p.URL == "" {
+			log.Printf("empty URL detected for %v", p.Name)
+		}
+
+		p.ID, _ = strconv.Atoi(strings.TrimPrefix(p.URL, "https://fantasyfootball.telegraph.co.uk/premierleague/statistics/points/"))
+		players[p.Name] = p
 	})
 
 	return players
@@ -33,10 +38,15 @@ func scrapeAllPlayers() map[int]fflPlayer {
 
 //https://fantasyfootball.telegraph.co.uk/premierleague/statistics/points/
 
-func scrapePlayer(p fflPlayer) {
-
-	doc, err := goquery.NewDocument(p.Url)
+func scrapePlayer(p *fflPlayer) {
+	if p.URL == "" {
+		log.Printf("empty URL detected for %v", p.Name)
+		return
+	}
+	p.WeekStats = make(map[string]weekStats)
+	doc, err := goquery.NewDocument(p.URL)
 	if err != nil {
+		log.Print(p.URL)
 		log.Fatal(err)
 		return
 	}
@@ -44,11 +54,114 @@ func scrapePlayer(p fflPlayer) {
 	p.Value = doc.Find("#stats-value").Text()
 	p.Position = doc.Find("#stats-position").Text()
 
-	doc.Find("#individual-player").Find("td").Each(func(i int, s *goquery.Selection) {
-		element := s.Text()
-		fmt.Printf("%s ", element)
-		if (i+1)%11 == 0 {
-			fmt.Printf("\n")
-		}
+	// the data differs depending on position
+	switch p.Position {
+	case "Midfielder", "Striker":
+		p.WeekStats = processMidAndFwd(doc)
+	case "Defender":
+		p.WeekStats = processDef(doc)
+	case "Goalkeeper":
+		p.WeekStats = processGK(doc)
+	}
+}
+
+func processMidAndFwd(doc *goquery.Document) map[string]weekStats {
+
+	p := make(map[string]weekStats)
+	// need to skip the header so use .Next()
+	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
+
+		//fmt.Printf("Text:%s \n", s.Text())
+		h, _ := s.Html()
+		arr := strings.Split(strings.Trim(strings.Trim(h, "\n \t<td>"), "</"), "</td><td>")
+		//fmt.Printf("item:%q \n", arr)
+		//<td>1</td><td>Swansea</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>7</td>
+
+		var w weekStats
+		w.Week, _ = strconv.Atoi(arr[0])        //int
+		w.Vs = arr[1]                           //string
+		w.Goals, _ = strconv.Atoi(arr[2])       //int
+		w.KeyContrib, _ = strconv.Atoi(arr[3])  //int
+		w.StartingXI, _ = strconv.Atoi(arr[4])  //int
+		w.Sub, _ = strconv.Atoi(arr[5])         //int
+		w.YellowCard, _ = strconv.Atoi(arr[6])  //int
+		w.RedCard, _ = strconv.Atoi(arr[7])     //int
+		w.PenaltyMiss, _ = strconv.Atoi(arr[8]) //int
+		w.OwnGoal, _ = strconv.Atoi(arr[9])     //int
+
+		w.Points, _ = strconv.Atoi(arr[10]) //int
+		//fmt.Println("Adding to map")
+		key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[key] = w
+		//fmt.Printf("%s \n", element)
+		//if (i+1)%11 == 0 {
+		//	fmt.Printf("\n")
+		//}
 	})
+	return p
+}
+
+func processDef(doc *goquery.Document) map[string]weekStats {
+	p := make(map[string]weekStats)
+	// need to skip the header so use .Next()
+	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
+
+		//fmt.Printf("Text:%s \n", s.Text())
+		h, _ := s.Html()
+		arr := strings.Split(strings.Trim(strings.Trim(h, "\n \t<td>"), "</"), "</td><td>")
+
+		var w weekStats
+		w.Week, _ = strconv.Atoi(arr[0])        //int
+		w.Vs = arr[1]                           //string
+		w.Goals, _ = strconv.Atoi(arr[2])       //int
+		w.KeyContrib, _ = strconv.Atoi(arr[3])  //int
+		w.StartingXI, _ = strconv.Atoi(arr[4])  //int
+		w.Sub, _ = strconv.Atoi(arr[5])         //int
+		w.YellowCard, _ = strconv.Atoi(arr[6])  //int
+		w.RedCard, _ = strconv.Atoi(arr[7])     //int
+		w.PenaltyMiss, _ = strconv.Atoi(arr[8]) //int
+		w.OwnGoal, _ = strconv.Atoi(arr[9])     //int
+
+		w.Conceeded, _ = strconv.Atoi(arr[10])      //int
+		w.FullCleanSheet, _ = strconv.Atoi(arr[11]) //int
+		w.PartCleanSheet, _ = strconv.Atoi(arr[12]) //int
+		w.Points, _ = strconv.Atoi(arr[13])         //int
+		key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[key] = w
+	})
+	return p
+}
+
+func processGK(doc *goquery.Document) map[string]weekStats {
+	p := make(map[string]weekStats)
+	// need to skip the header so use .Next()
+	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
+
+		h, _ := s.Html()
+		arr := strings.Split(strings.Trim(strings.Trim(h, "\n \t<td>"), "</"), "</td><td>")
+
+		var w weekStats
+		w.Week, _ = strconv.Atoi(arr[0])        //int
+		w.Vs = arr[1]                           //string
+		w.Goals, _ = strconv.Atoi(arr[2])       //int
+		w.KeyContrib, _ = strconv.Atoi(arr[3])  //int
+		w.StartingXI, _ = strconv.Atoi(arr[4])  //int
+		w.Sub, _ = strconv.Atoi(arr[5])         //int
+		w.YellowCard, _ = strconv.Atoi(arr[6])  //int
+		w.RedCard, _ = strconv.Atoi(arr[7])     //int
+		w.PenaltyMiss, _ = strconv.Atoi(arr[8]) //int
+
+		w.PenaltySaved, _ = strconv.Atoi(arr[9]) //int
+
+		w.OwnGoal, _ = strconv.Atoi(arr[10]) //int
+
+		w.Conceeded, _ = strconv.Atoi(arr[11])      //int
+		w.FullCleanSheet, _ = strconv.Atoi(arr[12]) //int
+		w.PartCleanSheet, _ = strconv.Atoi(arr[13]) //int
+
+		w.Points, _ = strconv.Atoi(arr[14]) //int
+		key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[key] = w
+	})
+	return p
 }

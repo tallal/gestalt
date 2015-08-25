@@ -1,14 +1,15 @@
-[ ]upload to git hub!!!
-[ ]document final playerfile format (ids would be better to have handy!?! or else switch the index on the map)
-[ ]complete fn to load up individual weekly stats
+[*]upload to git hub!!!
+[*]refactor out the load/save code
+[*]refactor out the scraping code
+[*]document final playerfile format (ids would be better to have handy!?! or else switch the index on the map)
+[*]complete fn to load up individual weekly stats
+[*]build in week ranges that players are active scoring for 0,0 is all weeks x,0 is from x week until end, 0,x is from start to week x. All xes are inclusive.
+[ ]get everyones teams build as bootstraps
+[ ]add capability to load in missing players from a Missing.txt file
+[ ]show list of teams in descending order of points
 [ ]parse list of players that have been used (in play)
 [ ]set up a chan based solution that loads up the players randomly via proxies?
-[*]refactor out the load/save code
-[*]refactor out the scraping code 
 [ ]http server that:
 	at root renders a summary page showing the scores for the last weekend.
 	renders a pager for each team, detailing the week by week scores
 	have a history page that shows the leaderboard for a particular week #
-
-
- 

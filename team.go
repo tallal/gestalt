@@ -1,9 +1,10 @@
 package main
 
 type team struct {
-	name       string
-	filename   string
-	owner      string
-	totalScore int
-	players    map[int]fflPlayer
+	Name       string
+	Filename   string
+	Bootstrap  string
+	Owner      string
+	TotalScore int
+	Players    map[string]fflPlayer
 }
