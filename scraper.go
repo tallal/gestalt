@@ -31,7 +31,7 @@ func scrapeAllPlayers() map[string]fflPlayer {
 		p.Team = s.Next().Text()
 		p.Index = p.Name + "|" + p.Team
 
-		//fmt.Printf("Player Processed:\n Name:%s, Team:%v , index:%s, url:%s\n", p.Name, p.Team, p.Index, p.URL)
+		//log.Printf("Player Processed:\n Name:%s, Team:%v , index:%s, url:%s\n", p.Name, p.Team, p.Index, p.URL)
 		players[p.Index] = p
 	})
 
@@ -47,9 +47,9 @@ func scrapePlayer(p *fflPlayer) {
 		return
 	}
 
-	//fmt.Printf("Processing:%s URL:%s\n", p.Name, p.URL)
+	//log.Printf("Processing:%s URL:%s\n", p.Name, p.URL)
 
-	p.WeekStats = make(map[string]weekStats)
+	p.WeekStats = make(map[int]weekStats)
 	doc, err := goquery.NewDocument(p.URL)
 	if err != nil {
 		log.Print(p.URL)
@@ -70,19 +70,19 @@ func scrapePlayer(p *fflPlayer) {
 	case "Goalkeeper":
 		p.WeekStats = processGK(doc)
 	}
-	//fmt.Printf("weekstats:%v\n", p.WeekStats)
+	//log.Printf("weekstats:%v\n", p.WeekStats)
 }
 
-func processMidAndFwd(doc *goquery.Document) map[string]weekStats {
+func processMidAndFwd(doc *goquery.Document) map[int]weekStats {
 
-	p := make(map[string]weekStats)
+	p := make(map[int]weekStats)
 	// need to skip the header so use .Next()
 	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
 
-		//fmt.Printf("Text:%s \n", s.Text())
+		//log.Printf("Text:%s \n", s.Text())
 		h, _ := s.Html()
 		arr := strings.Split(strings.Trim(strings.Trim(h, "\n \t<td>"), "</"), "</td><td>")
-		//fmt.Printf("item:%q \n", arr)
+		//log.Printf("item:%q \n", arr)
 		//<td>1</td><td>Swansea</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>7</td>
 
 		var w weekStats
@@ -99,22 +99,22 @@ func processMidAndFwd(doc *goquery.Document) map[string]weekStats {
 
 		w.Points, _ = strconv.Atoi(arr[10]) //int
 		//fmt.Println("Adding to map")
-		key := strconv.Itoa(w.Week) + "-" + w.Vs
-		p[key] = w
-		//fmt.Printf("%s \n", element)
+		//key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[w.Week] = w
+		//log.Printf("%s \n", element)
 		//if (i+1)%11 == 0 {
-		//	fmt.Printf("\n")
+		//	log.Printf("\n")
 		//}
 	})
 	return p
 }
 
-func processDef(doc *goquery.Document) map[string]weekStats {
-	p := make(map[string]weekStats)
+func processDef(doc *goquery.Document) map[int]weekStats {
+	p := make(map[int]weekStats)
 	// need to skip the header so use .Next()
 	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
 
-		//fmt.Printf("Text:%s \n", s.Text())
+		//log.Printf("Text:%s \n", s.Text())
 		h, _ := s.Html()
 		arr := strings.Split(strings.Trim(strings.Trim(h, "\n \t<td>"), "</"), "</td><td>")
 
@@ -134,14 +134,14 @@ func processDef(doc *goquery.Document) map[string]weekStats {
 		w.FullCleanSheet, _ = strconv.Atoi(arr[11]) //int
 		w.PartCleanSheet, _ = strconv.Atoi(arr[12]) //int
 		w.Points, _ = strconv.Atoi(arr[13])         //int
-		key := strconv.Itoa(w.Week) + "-" + w.Vs
-		p[key] = w
+		//key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[w.Week] = w
 	})
 	return p
 }
 
-func processGK(doc *goquery.Document) map[string]weekStats {
-	p := make(map[string]weekStats)
+func processGK(doc *goquery.Document) map[int]weekStats {
+	p := make(map[int]weekStats)
 	// need to skip the header so use .Next()
 	doc.Find("#individual-player").Find("tbody").Find("tr").Each(func(i int, s *goquery.Selection) {
 
@@ -168,8 +168,8 @@ func processGK(doc *goquery.Document) map[string]weekStats {
 		w.PartCleanSheet, _ = strconv.Atoi(arr[13]) //int
 
 		w.Points, _ = strconv.Atoi(arr[14]) //int
-		key := strconv.Itoa(w.Week) + "-" + w.Vs
-		p[key] = w
+		//key := strconv.Itoa(w.Week) + "-" + w.Vs
+		p[w.Week] = w
 	})
 	return p
 }
