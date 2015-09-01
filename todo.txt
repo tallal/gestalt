@@ -5,17 +5,21 @@
 [*]complete fn to load up individual weekly stats
 [*]build in week ranges that players are active scoring for 0,0 is all weeks x,0 is from x week until end, 0,x is from start to week x. All xes are inclusive.
 [*]get everyones teams build as bootstraps
-[ ]add capability to load in missing players from a Missing.txt file
+[*]add capability to load in missing players from a Missing.txt file
 [*]show list of teams in descending order of points
 [*]parse list of players that have been used (in play)
-[*]http server that:
-	at root renders a summary page showing the scores for the last weekend.
-	renders a pager for each team, detailing the week by week scores
-	have a history page that shows the leaderboard for a particular week #
+[*]http server that: at root renders a summary page showing the scores for the last weekend.
+[*]http server that: renders a pager for each team, detailing the week by week scores
+[*]http server that: have a history page that shows the leaderboard for a particular week #
 
 [ ]Tracking via google analytics
 [ ]move to html templates
 [ ]Get  version published to web
+[ ]Admin page to initiate a reload
+[ ]Admin pages to amend the teams.
+[ ]Admin pages to view all logging.
+[ ]Version
+[ ]Auto build & release?
 
 Maybe
 [ ]set up a chan based solution that loads up the players randomly via proxies?
