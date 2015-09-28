@@ -190,6 +190,7 @@ func getMissingPlayer(name string) (player fflPlayer, err error) {
 				k, _ := strconv.Atoi(arr[i])
 				player.TotalPoints += k
 			}
+			log.Printf("Found & processed %s...\n", player.Name)
 			return player, nil
 		}
 	}

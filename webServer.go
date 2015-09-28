@@ -16,7 +16,7 @@ var league = make([]team, 16)
 func main() {
 	// web code starts here
 	//	Routes:
-	if info, err := os.Stat("data\\league.gob"); os.IsNotExist(err) {
+	if _, err := os.Stat("data\\league.gob"); os.IsNotExist(err) {
 		fmt.Println("ERROR: League GOB file does not exist...")
 		os.Exit(1)
 	}
@@ -140,3 +140,6 @@ func getTeam(managerName string) (t team, err error) {
 	}
 	return team{}, errors.New("can't find the team selected")
 }
+
+
+sudo vi /etc/nginx/sites-enabled/default
