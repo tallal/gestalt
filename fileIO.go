@@ -166,7 +166,7 @@ func getMissingPlayer(name string) (player fflPlayer, err error) {
 	log.Printf("Searching missing players list for %s...\n", name)
 
 	// Open a RO file
-	decodeFile, err := os.Open("data\\missingPlayers.txt")
+	decodeFile, err := os.Open("./data/missingPlayers.txt")
 	if err != nil {
 		panic(err)
 	}

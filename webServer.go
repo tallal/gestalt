@@ -3,40 +3,67 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/gorilla/mux"
 )
 
 var league = make([]team, 16)
+var fileInfo string
 
 func main() {
-	// web code starts here
-	//	Routes:
-	if _, err := os.Stat("data\\league.gob"); os.IsNotExist(err) {
+
+	inf, err := os.Stat("./data/league.gob")
+	if os.IsNotExist(err) {
 		fmt.Println("ERROR: League GOB file does not exist...")
 		os.Exit(1)
 	}
+	fileInfo = inf.ModTime().Format(http.TimeFormat)
 
 	fmt.Println("Loading league GOB file...")
-	league = loadLeagueFile("data\\league.gob")
+	league = loadLeagueFile("./data/league.gob")
 
 	r := mux.NewRouter().StrictSlash(false)
+	//r.NotFoundHandler = http.HandlerFunc(notFound)
 	r.HandleFunc("/Team/{id}", teamHandler)
 	r.HandleFunc("/", homeHandler)
 
 	s := http.StripPrefix("/static/", http.FileServer(http.Dir("./static/")))
 	r.PathPrefix("/static/").Handler(s)
 
-	fmt.Println("Starting server on :3000")
+	log.Println("Starting server on :3000")
 	http.Handle("/", r)
 	http.ListenAndServe(":3000", r)
 }
 
+type pageData struct {
+	LastUpdated string
+	Items       []team
+}
+
+func processByTemplate(rw http.ResponseWriter, r *http.Request) {
+	t, err := template.New("home.html").ParseFiles("./tmpl/home.html")
+	if err != nil {
+		log.Println(err)
+	}
+	var data pageData
+
+	data.LastUpdated = "19-Oct-2015@23:11"
+	data.Items = league[:16]
+
+	err = t.ExecuteTemplate(rw, "home.html", data) // merge & serve
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func homeHandler(rw http.ResponseWriter, r *http.Request) {
+
 	fmt.Fprintln(rw, "<!DOCTYPE html>\n<html>\n<head>")
 	fmt.Fprintln(rw, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
 	fmt.Fprintln(rw, "<link href=\"/static/site.css\" rel=\"stylesheet\">")
@@ -45,6 +72,8 @@ func homeHandler(rw http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(rw, "<script src=\"http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js\"></script>")
 	fmt.Fprintln(rw, "</head>\n<body>")
 	fmt.Fprintln(rw, "<div data-role=\"page\" id=\"pageone\">\n<div data-role=\"header\"><h1>FFL 2015/2016</h1></div>")
+
+	fmt.Fprintf(rw, "<div class='smallSubheader'>Updated on:%s</div>\n", fileInfo)
 	fmt.Fprintln(rw, "<table id=\"league\">")
 	fmt.Fprintln(rw, "<tr>")
 	fmt.Fprintln(rw, "<th>TEAM</th><th>OWNER</th><th>TOTAL POINTS</th>")
@@ -63,6 +92,7 @@ func homeHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintln(rw, "</table>")
 	fmt.Fprintln(rw, "<div data-role=\"footer\">\n<h4>Please report all errors to Tal, Mandeep & Suleman.\n For now the spreadsheet is the golden source</h4>\n</div>\n</div>\n</body>\n</html>")
+
 }
 
 func teamHandler(rw http.ResponseWriter, r *http.Request) {
@@ -77,9 +107,10 @@ func teamHandler(rw http.ResponseWriter, r *http.Request) {
 	team, err := getTeam(vars["id"])
 	if err == nil {
 		fmt.Fprintf(rw, "<div data-role=\"page\" id=\"pageone\">\n<div data-role=\"header\"><h1>FFL Team - %s</h1></div>\n", vars["id"])
-
+		fmt.Fprintf(rw, "<div class='smallSubheader'>Updated on:%s</div>\n", fileInfo)
+		fmt.Fprintln(rw, "<p><a href=\"/\">BACK</a></p>")
 		fmt.Fprintln(rw, "<table id=\"league\">")
-		fmt.Fprintln(rw, "<tr><th>Player</th><th>Team</th><th>Total Points</th><th>Week Stats</th></tr>")
+		fmt.Fprintln(rw, "<tr><th>Player</th><th>Team</th><th>Total</th><th>Week Stats</th></tr>")
 
 		processTeamByPos("Goalkeeper", team, rw)
 		fmt.Fprintln(rw, "<tr><td colspan=5>Defence</td></tr>")
@@ -96,8 +127,8 @@ func teamHandler(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, "<h1>TEAM %s NOT FOUND - PLEASE RETURN</h1>\n", vars["id"])
 	}
 
-	fmt.Fprintln(rw, "<a href=\"/\">BACK</a>")
-	fmt.Fprintln(rw, "<div data-role=\"footer\">\n<h4>Please report all errors to Tal,Mandeep & Suleman.\n For now the spreadsheet is the golden source</h4>\n</div>\n</div>\n</body>\n</html>")
+	fmt.Fprintln(rw, "<p><a href=\"/\">BACK</a></p>")
+	fmt.Fprintln(rw, "<div data-role=\"footer\">\n<h4>Please report all errors to Tal,Mandeep & Suleman.</h4>\n</div>\n</div>\n</body>\n</html>")
 }
 
 func processTeamByPos(position string, t team, rw http.ResponseWriter) {
@@ -113,7 +144,15 @@ func processTeamByPos(position string, t team, rw http.ResponseWriter) {
 		sort.Ints(keys)
 
 		for _, k := range keys {
-			fmt.Fprintf(rw, "<tr><td>%d</td><td>%s</td><td>%d</td></tr>", v.WeekStats[k].Week, v.WeekStats[k].Vs, v.WeekStats[k].Points)
+			//if v.ScoringWeekStart v.WeekStats[k].Week
+			//if player i
+			if v.ScoringWeekStart == 0 && v.ScoringWeekEnd == 99 {
+				fmt.Fprintf(rw, "<tr><td>%d</td><td>%s</td><td>%d</td></tr>", v.WeekStats[k].Week, v.WeekStats[k].Vs, v.WeekStats[k].Points)
+			} else if v.ScoringWeekStart <= v.WeekStats[k].Week && v.ScoringWeekEnd >= v.WeekStats[k].Week {
+				fmt.Fprintf(rw, "<tr><td>%d</td><td>%s</td><td>%d</td></tr>", v.WeekStats[k].Week, v.WeekStats[k].Vs, v.WeekStats[k].Points)
+			} else {
+				fmt.Fprintf(rw, "<tr><td class='nonscoring'>%d</td><td class='nonscoring'>%s</td><td class='nonscoring'>%d</td></tr>", v.WeekStats[k].Week, v.WeekStats[k].Vs, v.WeekStats[k].Points)
+			}
 		}
 
 		fmt.Fprintln(rw, "</table></p></div></td>\n</tr>")
@@ -140,6 +179,3 @@ func getTeam(managerName string) (t team, err error) {
 	}
 	return team{}, errors.New("can't find the team selected")
 }
-
-
-sudo vi /etc/nginx/sites-enabled/default

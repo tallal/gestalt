@@ -2,6 +2,7 @@
     font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
     width: 90%
     border-collapse: collapse;
+    vertical-align: middle;
 }
 
 #league td, #league th {
@@ -25,6 +26,7 @@
 }
 body {
     background-color: white;
+
 }
 
 h1 {
@@ -36,4 +38,15 @@ h1 {
 p {
     font-family: "Verdana";
     font-size: 20px;
+}
+.nonscoring {
+    text-decoration: line-through;
+    background-color: #CFCFCF;
+}
+
+.smallSubheader {
+    color: black;
+    text-align: center;
+    font-family: "Verdana";
+    font-size: 9px;
 }

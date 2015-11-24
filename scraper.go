@@ -13,7 +13,7 @@ func scrapeAllPlayers() map[string]fflPlayer {
 
 	players := make(map[string]fflPlayer)
 
-	doc, err := goquery.NewDocument(os.Getenv("FFL-URL1"))
+	doc, err := goquery.NewDocument(os.Getenv("FFL_URL1"))
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -27,7 +27,7 @@ func scrapeAllPlayers() map[string]fflPlayer {
 			log.Printf("empty URL detected for %v", p.Name)
 		}
 
-		p.ID, _ = strconv.Atoi(strings.TrimPrefix(p.URL, os.Getenv("FFL-URL2")))
+		p.ID, _ = strconv.Atoi(strings.TrimPrefix(p.URL, os.Getenv("FFL_URL2")))
 		p.Team = s.Next().Text()
 		p.Index = p.Name + "|" + p.Team
 
